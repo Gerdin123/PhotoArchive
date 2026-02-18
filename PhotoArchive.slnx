@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="PhotoArchive.Cleaner/PhotoArchive.Cleaner.csproj" />
+  <Project Path="PhotoArchive.Core/PhotoArchive.Core.csproj" />
+</Solution>
