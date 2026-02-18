@@ -8,9 +8,11 @@ namespace PhotoArchive.Cleaner.Services
         // Maps file hash -> first path seen. Later matches become duplicates.
         private readonly Dictionary<string, string> firstPathByHash = new(StringComparer.OrdinalIgnoreCase);
 
+        public string ComputeHash(string filePath) => ComputeSha256(filePath);
+
         public DuplicateCheckResult Register(string filePath)
         {
-            var hash = ComputeSha256(filePath);
+            var hash = ComputeHash(filePath);
             if (firstPathByHash.TryGetValue(hash, out var firstPath))
             {
                 return new DuplicateCheckResult

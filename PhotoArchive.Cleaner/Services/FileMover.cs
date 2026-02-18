@@ -2,12 +2,10 @@ namespace PhotoArchive.Cleaner.Services
 {
     internal class FileMover : IFileMover
     {
-        private readonly string rootPath;
         private readonly string outputPath;
 
         public FileMover(string rootPath, string outputPath)
         {
-            this.rootPath = Path.GetFullPath(rootPath);
             this.outputPath = Path.GetFullPath(outputPath);
 
             // Pre-create top-level buckets for predictable output structure.
@@ -18,17 +16,19 @@ namespace PhotoArchive.Cleaner.Services
 
         public string MoveToDuplicates(string file) => Move(file, "Duplicates", null);
 
-        public string MoveToImages(string file, int year) => Move(file, "Images", year);
+        public string MoveToImages(string file, int year, int month) => Move(file, "Images", year, month);
 
-        public string MoveToOthers(string file, int year) => Move(file, "Others", year);
+        public string MoveToOthers(string file, int year, int month) => Move(file, "Others", year, month);
 
-        private string BuildPath(string destination, string file, int? year)
+        public string MoveToOthersCategory(string file, string category)
+            => Move(file, Path.Combine("Others", category), null);
+
+        private string BuildPath(string destination, string file, int? year, int? month)
         {
-            // Preserve source folder hierarchy inside each bucket.
-            var relativePath = Path.GetRelativePath(rootPath, file);
-            var targetPath = year.HasValue
-                ? Path.Combine(outputPath, destination, year.Value.ToString(), relativePath)
-                : Path.Combine(outputPath, destination, relativePath);
+            var fileName = Path.GetFileName(file);
+            var targetPath = year.HasValue && month.HasValue
+                ? Path.Combine(outputPath, destination, year.Value.ToString("0000"), month.Value.ToString("00"), fileName)
+                : Path.Combine(outputPath, destination, fileName);
 
             var parent = Path.GetDirectoryName(targetPath);
             if (!string.IsNullOrWhiteSpace(parent))
@@ -53,9 +53,9 @@ namespace PhotoArchive.Cleaner.Services
             return candidate;
         }
 
-        private string Move(string file, string destination, int? year)
+        private string Move(string file, string destination, int? year, int? month = null)
         {
-            var destinationPath = BuildPath(destination, file, year);
+            var destinationPath = BuildPath(destination, file, year, month);
             File.Copy(file, destinationPath, overwrite: false);
             return destinationPath;
         }
