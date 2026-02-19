@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>aspnet-PhotoArchive.API-78e952f3-a04c-43eb-96dd-9237aecbcdc0</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.3" NoWarn="NU1605" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="10.0.3" NoWarn="NU1605" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="3.14.1"/>
+    <PackageReference Include="Microsoft.Identity.Web.DownstreamApi" Version="3.14.1"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PhotoArchive.Infrastructure\PhotoArchive.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
