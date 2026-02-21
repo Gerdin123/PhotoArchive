@@ -9,6 +9,7 @@ namespace PhotoArchive.Core.Entities
         public int Id { get; set; }
         /// <summary>Display name.</summary>
         public required string Name { get; set; }
+        public required string NormalizedName { get; set; }
 
         /// <summary>Many-to-many links between person and photos.</summary>
         public ICollection<PhotoPerson> PhotoPeople { get; set; } = [];

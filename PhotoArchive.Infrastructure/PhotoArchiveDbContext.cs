@@ -35,14 +35,16 @@ public sealed class PhotoArchiveDbContext(DbContextOptions<PhotoArchiveDbContext
         {
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Name).HasMaxLength(256);
-            entity.HasIndex(x => x.Name).IsUnique();
+            entity.Property(x => x.NormalizedName).HasMaxLength(256);
+            entity.HasIndex(x => x.NormalizedName).IsUnique();
         });
 
         modelBuilder.Entity<Tag>(entity =>
         {
             entity.HasKey(x => x.Id);
             entity.Property(x => x.Name).HasMaxLength(128);
-            entity.HasIndex(x => x.Name).IsUnique();
+            entity.Property(x => x.NormalizedName).HasMaxLength(128);
+            entity.HasIndex(x => x.NormalizedName).IsUnique();
         });
 
         modelBuilder.Entity<PhotoPerson>(entity =>

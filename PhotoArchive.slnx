@@ -1,8 +1,8 @@
 <Solution>
   <Project Path="PhotoArchive.API/PhotoArchive.API.csproj" />
   <Project Path="PhotoArchive.Cleaner/PhotoArchive.Cleaner.csproj" />
-  <Project Path="PhotoArchive.Core/PhotoArchive.Core.csproj" />
   <Project Path="PhotoArchive.Domain/PhotoArchive.Domain.csproj" />
   <Project Path="PhotoArchive.Import/PhotoArchive.Import.csproj" />
   <Project Path="PhotoArchive.Infrastructure/PhotoArchive.Infrastructure.csproj" />
+  <Project Path="PhotoArchive.Test/PhotoArchive.Test.csproj" Id="4baf2f7e-dd04-437a-bf45-72db4919a7b9" />
 </Solution>
