@@ -1,3 +1,4 @@
+using PhotoArchive.Domain.Entities;
 using PhotoArchive.Infrastructure;
 
 namespace PhotoArchive.Import;
@@ -28,6 +29,7 @@ internal sealed class ManifestImportService
         var pending = 0;
 
         var importedHashes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var tagByNormalized = LoadTagLookup(dbContext);
         var lineNumber = 1;
         using var progress = new ConsoleProgressReporter(totalRows);
         while (!reader.EndOfStream)
@@ -82,6 +84,7 @@ internal sealed class ManifestImportService
                 continue;
             }
 
+            AttachExifTags(photo, fields, indexes, tagByNormalized, dbContext);
             dbContext.Photos.Add(photo);
             imported++;
             pending++;
@@ -91,6 +94,7 @@ internal sealed class ManifestImportService
             {
                 dbContext.SaveChanges();
                 dbContext.ChangeTracker.Clear();
+                tagByNormalized = LoadTagLookup(dbContext);
                 pending = 0;
             }
         }
@@ -109,5 +113,64 @@ internal sealed class ManifestImportService
             SkippedDuplicateHash = skippedDuplicateHash,
             SkippedInvalid = skippedInvalid
         };
+    }
+
+    private static void AttachExifTags(
+        Photo photo,
+        IReadOnlyList<string> fields,
+        ManifestColumnIndexes indexes,
+        IDictionary<string, Tag> tagByNormalized,
+        PhotoArchiveDbContext dbContext)
+    {
+        var exifTags = ParseExifTags(ManifestCsv.GetField(fields, indexes.ExifTags));
+        if (exifTags.Count == 0)
+        {
+            return;
+        }
+
+        var linked = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var tagName in exifTags)
+        {
+            var normalized = tagName.ToLowerInvariant();
+            if (!linked.Add(normalized))
+            {
+                continue;
+            }
+
+            if (!tagByNormalized.TryGetValue(normalized, out var tag))
+            {
+                tag = new Tag
+                {
+                    Name = tagName,
+                    NormalizedName = normalized
+                };
+                dbContext.Tags.Add(tag);
+                tagByNormalized[normalized] = tag;
+            }
+
+            photo.PhotoTags.Add(new PhotoTag
+            {
+                Photo = photo,
+                Tag = tag
+            });
+        }
+    }
+
+    private static IReadOnlyList<string> ParseExifTags(string raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return [];
+        }
+
+        return [.. raw
+            .Split([';', ',', '|'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)];
+    }
+
+    private static Dictionary<string, Tag> LoadTagLookup(PhotoArchiveDbContext dbContext)
+    {
+        return dbContext.Tags.ToDictionary(x => x.NormalizedName, StringComparer.OrdinalIgnoreCase);
     }
 }

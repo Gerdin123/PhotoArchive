@@ -44,6 +44,7 @@ public class PhotosControllerTests
         var result = await controller.UpdatePhoto(10, new UpdatePhotoDto
         {
             GroupingDate = newDate,
+            IsReviewed = true,
             TagIds = [1, 2],
             PersonIds = [3, 4]
         });
@@ -56,8 +57,53 @@ public class PhotosControllerTests
             .SingleAsync(p => p.Id == 10);
 
         Assert.Equal(newDate, photo.GroupingDate);
+        Assert.True(photo.IsReviewed);
         Assert.Equal([1, 2], [.. photo.PhotoTags.Select(x => x.TagId).Order()]);
         Assert.Equal([3, 4], [.. photo.PhotoPeople.Select(x => x.PersonId).Order()]);
+    }
+
+    [Fact]
+    public async Task GetPhotos_FiltersByIsReviewed()
+    {
+        using var scope = TestDbContextFactory.Create();
+        scope.Context.Photos.AddRange(
+            new Photo
+            {
+                Id = 1,
+                SourcePath = "source1.jpg",
+                OutputPath = "output1.jpg",
+                FileName = "output1.jpg",
+                Extension = ".jpg",
+                Sha256 = new string('E', 64),
+                GroupingDate = new DateTime(2020, 1, 1),
+                GroupingYear = 2020,
+                GroupingDateSource = GroupingDateSource.FileCreationTime,
+                IsReviewed = false
+            },
+            new Photo
+            {
+                Id = 2,
+                SourcePath = "source2.jpg",
+                OutputPath = "output2.jpg",
+                FileName = "output2.jpg",
+                Extension = ".jpg",
+                Sha256 = new string('F', 64),
+                GroupingDate = new DateTime(2020, 1, 2),
+                GroupingYear = 2020,
+                GroupingDateSource = GroupingDateSource.FileCreationTime,
+                IsReviewed = true
+            });
+        await scope.Context.SaveChangesAsync();
+
+        var controller = new PhotosController(scope.Context);
+
+        var result = await controller.GetPhotos(new PhotoQueryRequest { IsReviewed = false });
+
+        var ok = Assert.IsType<OkObjectResult>(result.Result);
+        var payload = Assert.IsType<PagedResponse<PhotoDto>>(ok.Value);
+        Assert.Single(payload.Items);
+        Assert.False(payload.Items.First().IsReviewed);
+        Assert.Equal(1, payload.Items.First().Id);
     }
 
     [Fact]

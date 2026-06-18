@@ -8,7 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PhotoArchive.Domain\PhotoArchive.Domain.csproj" />
     <ProjectReference Include="..\PhotoArchive.Infrastructure\PhotoArchive.Infrastructure.csproj" />
   </ItemGroup>
 

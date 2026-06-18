@@ -12,26 +12,37 @@ namespace PhotoArchive.Cleaner.Services
             using var writer = new StreamWriter(csvPath, append: false, Encoding.UTF8);
 
             // Header uses stable names so importer code can rely on exact column keys.
-            writer.WriteLine("SourcePath,OutputPath,Bucket,GroupingYear,GroupingDateSource,GroupingDate,DateTaken,CreatedYear,CreatedAtUtc,LastWriteAtUtc,SizeBytes,Extension,Sha256,IsDuplicate,CanonicalSourcePath");
+            writer.WriteLine("ImportBatchId,SourcePath,OutputPath,Bucket,Sha256,SizeBytes,Extension,Width,Height,Orientation,CameraMake,CameraModel,ExifTags,ExifDateTimeOriginal,ExifCreateDate,ExifModifyDate,FolderDateCandidate,CreatedAtUtc,LastWriteAtUtc,CleanerBestDate,CleanerBestDateSource,GroupingYear,GroupingDate,IsDuplicate,CanonicalSourcePath,PerceptualHash");
 
             foreach (var row in records)
             {
                 writer.WriteLine(string.Join(",",
+                    Escape(row.ImportBatchId),
                     Escape(row.SourcePath),
                     Escape(row.OutputPath),
                     Escape(row.Bucket),
-                    row.GroupingYear.ToString(CultureInfo.InvariantCulture),
-                    Escape(row.GroupingDateSource),
-                    Escape(row.GroupingDate.ToString("O", CultureInfo.InvariantCulture)),
-                    Escape(row.DateTaken?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty),
-                    row.CreatedYear.ToString(CultureInfo.InvariantCulture),
-                    Escape(row.CreatedAtUtc.ToString("O", CultureInfo.InvariantCulture)),
-                    Escape(row.LastWriteAtUtc.ToString("O", CultureInfo.InvariantCulture)),
+                    Escape(row.Sha256),
                     row.SizeBytes.ToString(CultureInfo.InvariantCulture),
                     Escape(row.Extension),
-                    Escape(row.Sha256),
+                    Escape(row.Width?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                    Escape(row.Height?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                    Escape(row.Orientation?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+                    Escape(row.CameraMake),
+                    Escape(row.CameraModel),
+                    Escape(row.ExifTags),
+                    Escape(row.ExifDateTimeOriginal?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty),
+                    Escape(row.ExifCreateDate?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty),
+                    Escape(row.ExifModifyDate?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty),
+                    Escape(row.FolderDateCandidate?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty),
+                    Escape(row.CreatedAtUtc.ToString("O", CultureInfo.InvariantCulture)),
+                    Escape(row.LastWriteAtUtc.ToString("O", CultureInfo.InvariantCulture)),
+                    Escape(row.CleanerBestDate.ToString("O", CultureInfo.InvariantCulture)),
+                    Escape(row.CleanerBestDateSource),
+                    row.GroupingYear.ToString(CultureInfo.InvariantCulture),
+                    Escape(row.GroupingDate.ToString("O", CultureInfo.InvariantCulture)),
                     row.IsDuplicate ? "true" : "false",
-                    Escape(row.CanonicalSourcePath)));
+                    Escape(row.CanonicalSourcePath),
+                    Escape(row.PerceptualHash)));
             }
 
             return csvPath;

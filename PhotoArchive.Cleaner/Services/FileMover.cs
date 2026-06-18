@@ -16,18 +16,25 @@ namespace PhotoArchive.Cleaner.Services
 
         public string MoveToDuplicates(string file) => Move(file, "Duplicates", null);
 
-        public string MoveToImages(string file, int year, int month) => Move(file, "Images", year, month);
+        public string MoveToImages(string file, int year, DateTime groupingDate, int dayIndex)
+        {
+            var extension = Path.GetExtension(file);
+            var fileName = $"{groupingDate:yyyyMMdd} - {dayIndex:D2}{extension}";
+            return Move(file, "Images", year, month: null, fileNameOverride: fileName);
+        }
 
         public string MoveToOthers(string file, int year, int month) => Move(file, "Others", year, month);
 
         public string MoveToOthersCategory(string file, string category)
             => Move(file, Path.Combine("Others", category), null);
 
-        private string BuildPath(string destination, string file, int? year, int? month)
+        private string BuildPath(string destination, string file, int? year, int? month, string? fileNameOverride)
         {
-            var fileName = Path.GetFileName(file);
+            var fileName = string.IsNullOrWhiteSpace(fileNameOverride) ? Path.GetFileName(file) : fileNameOverride;
             var targetPath = year.HasValue && month.HasValue
                 ? Path.Combine(outputPath, destination, year.Value.ToString("0000"), month.Value.ToString("00"), fileName)
+                : year.HasValue
+                    ? Path.Combine(outputPath, destination, year.Value.ToString("0000"), fileName)
                 : Path.Combine(outputPath, destination, fileName);
 
             var parent = Path.GetDirectoryName(targetPath);
@@ -53,9 +60,9 @@ namespace PhotoArchive.Cleaner.Services
             return candidate;
         }
 
-        private string Move(string file, string destination, int? year, int? month = null)
+        private string Move(string file, string destination, int? year, int? month = null, string? fileNameOverride = null)
         {
-            var destinationPath = BuildPath(destination, file, year, month);
+            var destinationPath = BuildPath(destination, file, year, month, fileNameOverride);
             File.Copy(file, destinationPath, overwrite: false);
             return destinationPath;
         }

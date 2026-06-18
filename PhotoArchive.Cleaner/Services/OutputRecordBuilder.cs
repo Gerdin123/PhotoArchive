@@ -13,11 +13,10 @@ internal sealed class OutputRecordBuilder(
         ".db", ".info", ".dat", ".pe4", ".idx"
     };
 
-    public ProcessedFileRecord Build(AnalyzedFile file, string canonicalPath)
+    public ProcessedFileRecord Build(AnalyzedFile file, string canonicalPath, string importBatchId, int dayIndex)
     {
         var isDuplicate = !string.Equals(file.SourcePath, canonicalPath, StringComparison.OrdinalIgnoreCase);
         var groupingYear = file.GroupingDate.Year;
-        var groupingMonth = file.GroupingDate.Month;
 
         var bucket = "Others";
         string outputPath;
@@ -30,7 +29,7 @@ internal sealed class OutputRecordBuilder(
         }
         else if (file.FileType == FileType.Image)
         {
-            outputPath = mover.MoveToImages(file.SourcePath, groupingYear, groupingMonth);
+            outputPath = mover.MoveToImages(file.SourcePath, groupingYear, file.GroupingDate, dayIndex);
             bucket = "Images";
             report.RegisterImage(file.SourcePath);
         }
@@ -48,7 +47,7 @@ internal sealed class OutputRecordBuilder(
             }
             else
             {
-                outputPath = mover.MoveToOthers(file.SourcePath, groupingYear, groupingMonth);
+                outputPath = mover.MoveToOthers(file.SourcePath, groupingYear, file.GroupingDate.Month);
             }
 
             report.RegisterOther(file.SourcePath);
@@ -56,21 +55,32 @@ internal sealed class OutputRecordBuilder(
 
         return new ProcessedFileRecord
         {
+            ImportBatchId = importBatchId,
             SourcePath = file.SourcePath,
             OutputPath = outputPath,
             Bucket = bucket,
-            GroupingYear = groupingYear,
-            GroupingDateSource = file.GroupingDateSource,
-            GroupingDate = file.GroupingDate,
-            DateTaken = file.DateTaken,
-            CreatedYear = file.CreatedAtUtc.Year,
-            CreatedAtUtc = file.CreatedAtUtc,
-            LastWriteAtUtc = file.LastWriteAtUtc,
+            Sha256 = file.Sha256,
             SizeBytes = file.SizeBytes,
             Extension = file.Extension,
-            Sha256 = file.Sha256,
+            Width = file.Width,
+            Height = file.Height,
+            Orientation = file.Orientation,
+            CameraMake = file.CameraMake,
+            CameraModel = file.CameraModel,
+            ExifTags = string.Join(";", file.ExifTags),
+            ExifDateTimeOriginal = file.ExifDateTimeOriginal,
+            ExifCreateDate = file.ExifCreateDate,
+            ExifModifyDate = file.ExifModifyDate,
+            FolderDateCandidate = file.FolderDateCandidate,
+            CreatedAtUtc = file.CreatedAtUtc,
+            LastWriteAtUtc = file.LastWriteAtUtc,
+            CleanerBestDate = file.GroupingDate,
+            CleanerBestDateSource = file.GroupingDateSource,
+            GroupingYear = groupingYear,
+            GroupingDate = file.GroupingDate,
             IsDuplicate = isDuplicate,
-            CanonicalSourcePath = isDuplicate ? canonicalPath : string.Empty
+            CanonicalSourcePath = isDuplicate ? canonicalPath : string.Empty,
+            PerceptualHash = file.PerceptualHash
         };
     }
 }

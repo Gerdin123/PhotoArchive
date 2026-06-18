@@ -13,6 +13,7 @@ internal static class ImportOptionsResolver
         if (string.IsNullOrWhiteSpace(cleanedFolder) || !Directory.Exists(cleanedFolder))
         {
             Console.WriteLine("The provided cleaned folder does not exist.");
+            Console.ReadKey();
             return false;
         }
 
@@ -20,6 +21,7 @@ internal static class ImportOptionsResolver
         if (!File.Exists(manifestPath))
         {
             Console.WriteLine($"Could not find '{ManifestFileName}' in '{cleanedFolder}'.");
+            Console.ReadKey();
             return false;
         }
 
@@ -27,11 +29,13 @@ internal static class ImportOptionsResolver
         if (string.IsNullOrWhiteSpace(databasePath))
         {
             Console.WriteLine("No database path was provided.");
+            Console.ReadKey();
             return false;
         }
 
         if (!PrepareDatabaseLocation(args, databasePath))
         {
+            Console.ReadKey();
             return false;
         }
 

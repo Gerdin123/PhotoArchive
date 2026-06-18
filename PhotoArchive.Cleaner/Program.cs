@@ -15,7 +15,8 @@ namespace PhotoArchive.Cleaner
 
             Console.WriteLine($"Source: {options.SourcePath}");
             Console.WriteLine($"Output: {options.OutputRoot}");
-            Console.WriteLine($"Date source preference: {(options.UseFolderDate ? "FolderNamePrefix -> EXIF -> FileCreationTime" : "EXIF -> FileCreationTime")}");
+            Console.WriteLine("Date source preference: DateTimeOriginal -> CreateDate -> FolderStructure -> CreationTime -> LastWriteTime");
+            Console.WriteLine("Image filtering: known image extensions are kept in Images; thumbnail-like names are routed to Others.");
             Console.WriteLine($"Others/Thumbnails enabled: {options.GroupThumbnails}");
             Console.WriteLine($"Others/OldProgramSpecific enabled: {options.GroupLegacyProgramFiles}");
 
@@ -28,7 +29,6 @@ namespace PhotoArchive.Cleaner
 
             var fileAnalyzer = new FileAnalyzer(
                 options.SourcePath,
-                options.UseFolderDate,
                 classifier,
                 metadataExtractor,
                 duplicateDetector);
@@ -37,6 +37,7 @@ namespace PhotoArchive.Cleaner
                 options.GroupLegacyProgramFiles,
                 mover,
                 report);
+            var importBatchId = Guid.NewGuid().ToString("N");
 
             var processedRecords = new List<ProcessedFileRecord>();
             var totalStopwatch = Stopwatch.StartNew();
@@ -83,11 +84,13 @@ namespace PhotoArchive.Cleaner
                         .First()
                         .SourcePath,
                     StringComparer.OrdinalIgnoreCase);
+            var dayIndexBySourcePath = BuildDayIndexBySourcePath(analyzedFiles, canonicalByHash);
 
             foreach (var file in analyzedFiles)
             {
                 var canonicalPath = canonicalByHash[file.Sha256];
-                var record = recordBuilder.Build(file, canonicalPath);
+                var dayIndex = dayIndexBySourcePath.TryGetValue(file.SourcePath, out var index) ? index : 0;
+                var record = recordBuilder.Build(file, canonicalPath, importBatchId, dayIndex);
                 processedRecords.Add(record);
 
                 progressCurrent++;
@@ -101,6 +104,32 @@ namespace PhotoArchive.Cleaner
             Console.WriteLine($"CSV manifest created: {manifestPath}");
             Console.WriteLine($"Total time: {ConsoleProgressRenderer.FormatDuration(totalStopwatch.Elapsed)}");
             Console.WriteLine("Metadata is preserved because files are copied byte-for-byte without modification.");
+        }
+
+        private static IReadOnlyDictionary<string, int> BuildDayIndexBySourcePath(
+            IReadOnlyList<AnalyzedFile> analyzedFiles,
+            IReadOnlyDictionary<string, string> canonicalByHash)
+        {
+            var dayIndexBySourcePath = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            var canonicalImages = analyzedFiles
+                .Where(x => x.FileType == FileType.Image)
+                .Where(x => canonicalByHash.TryGetValue(x.Sha256, out var canonicalPath)
+                    && canonicalPath.Equals(x.SourcePath, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(x => x.GroupingDate)
+                .ThenBy(x => x.SourcePath, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            foreach (var dayGroup in canonicalImages.GroupBy(x => x.GroupingDate.Date))
+            {
+                var index = 1;
+                foreach (var file in dayGroup)
+                {
+                    dayIndexBySourcePath[file.SourcePath] = index;
+                    index++;
+                }
+            }
+
+            return dayIndexBySourcePath;
         }
     }
 }

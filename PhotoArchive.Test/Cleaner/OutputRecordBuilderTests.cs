@@ -21,14 +21,14 @@ public class OutputRecordBuilderTests
             SourcePath = @"C:\in\a.jpg",
             FileType = FileType.Image,
             GroupingDate = new DateTime(2024, 1, 2),
-            GroupingDateSource = "DateTaken",
+            GroupingDateSource = "DateTimeOriginal",
             CreatedAtUtc = DateTime.UtcNow,
             LastWriteAtUtc = DateTime.UtcNow,
             Extension = ".jpg",
             Sha256 = "H1"
         };
 
-        var record = builder.Build(analyzed, @"C:\in\other.jpg");
+        var record = builder.Build(analyzed, @"C:\in\other.jpg", "batch1", 1);
 
         Assert.Equal("Duplicates", record.Bucket);
         Assert.Equal(1, report.Duplicates);
@@ -52,14 +52,14 @@ public class OutputRecordBuilderTests
             SourcePath = @"C:\in\my_thumb.png",
             FileType = FileType.Other,
             GroupingDate = new DateTime(2024, 1, 2),
-            GroupingDateSource = "FileCreationTime",
+            GroupingDateSource = "CreationTime",
             CreatedAtUtc = DateTime.UtcNow,
             LastWriteAtUtc = DateTime.UtcNow,
             Extension = ".png",
             Sha256 = "H2"
         };
 
-        var record = builder.Build(analyzed, analyzed.SourcePath);
+        var record = builder.Build(analyzed, analyzed.SourcePath, "batch2", 0);
 
         Assert.Equal("Others/Thumbnails", record.Bucket);
         Assert.Equal(1, report.Others);
@@ -69,7 +69,7 @@ public class OutputRecordBuilderTests
     private sealed class FakeMover : IFileMover
     {
         public string MoveToDuplicates(string file) => $"dup:{file}";
-        public string MoveToImages(string file, int year, int month) => $"img:{year:D4}-{month:D2}:{file}";
+        public string MoveToImages(string file, int year, DateTime groupingDate, int dayIndex) => $"img:{year:D4}-{groupingDate:MMdd}-{dayIndex:D2}:{file}";
         public string MoveToOthers(string file, int year, int month) => $"other:{year:D4}-{month:D2}:{file}";
         public string MoveToOthersCategory(string file, string category) => $"othercat:{category}:{file}";
     }

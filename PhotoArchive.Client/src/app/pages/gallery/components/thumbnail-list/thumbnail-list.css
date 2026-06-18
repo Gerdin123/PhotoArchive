@@ -1,0 +1,6 @@
+.thumbnail-grid {
+  --grid-cols: 2;
+  display: grid;
+  grid-template-columns: repeat(var(--grid-cols), minmax(0, 1fr));
+  gap: 14px;
+}

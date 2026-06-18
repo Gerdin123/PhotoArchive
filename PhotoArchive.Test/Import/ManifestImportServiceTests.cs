@@ -28,6 +28,18 @@ public class ManifestImportServiceTests
             Assert.Equal(2, summary.SkippedInvalid);
             Assert.Single(imported);
             Assert.Equal("H1", imported[0].Sha256);
+            Assert.False(imported[0].IsReviewed);
+            var importedWithTags = scope.Context.Photos
+                .AsNoTracking()
+                .Include(p => p.PhotoTags)
+                .ThenInclude(pt => pt.Tag)
+                .Single();
+            var tagNames = importedWithTags.PhotoTags
+                .Select(x => x.Tag?.Name)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .OrderBy(x => x, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            Assert.Equal(["Family", "Travel"], tagNames);
         }
         finally
         {
@@ -48,8 +60,8 @@ public class ManifestImportServiceTests
         {
             File.WriteAllLines(manifestPath,
             [
-                "SourcePath,OutputPath,Bucket,GroupingYear,GroupingDateSource,GroupingDate,DateTaken,CreatedAtUtc,LastWriteAtUtc,SizeBytes,Extension,Sha256,IsDuplicate",
-                @"C:\a.jpg,C:\out\a.jpg,Images,2024,DateTaken,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,12,.jpg,H1,false"
+                "ImportBatchId,SourcePath,OutputPath,Bucket,Sha256,SizeBytes,Extension,Width,Height,Orientation,CameraMake,CameraModel,ExifTags,ExifDateTimeOriginal,ExifCreateDate,ExifModifyDate,FolderDateCandidate,CreatedAtUtc,LastWriteAtUtc,CleanerBestDate,CleanerBestDateSource,GroupingYear,GroupingDate,IsDuplicate",
+                @"batch1,C:\a.jpg,C:\out\a.jpg,Images,H1,12,.jpg,640,480,1,Canon,EOS,Travel;Family,2024-01-01T00:00:00.0000000Z,,,,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,2024-01-01T00:00:00.0000000Z,DateTimeOriginal,2024,2024-01-01T00:00:00.0000000Z,false"
             ]);
 
             var service = new ManifestImportService();
@@ -67,13 +79,13 @@ public class ManifestImportServiceTests
     {
         var lines = new[]
         {
-            "SourcePath,OutputPath,Bucket,GroupingYear,GroupingDateSource,GroupingDate,DateTaken,CreatedAtUtc,LastWriteAtUtc,SizeBytes,Extension,Sha256,IsDuplicate,CanonicalSourcePath",
-            @"C:\a.jpg,C:\out\a.jpg,Images,2024,DateTaken,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,12,.jpg,H1,false,",
-            @"C:\b.jpg,C:\out\b.jpg,Images,2024,DateTaken,2024-01-01T00:00:00.0000000Z,,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,12,.jpg,H1,false,",
-            @"C:\c.txt,C:\out\c.txt,Others,2024,FileCreationTime,2024-01-01T00:00:00.0000000Z,,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,12,.txt,H2,false,",
-            @"C:\d.jpg,C:\out\d.jpg,Images,2024,DateTaken,2024-01-01T00:00:00.0000000Z,,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,12,.jpg,H3,true,C:\x.jpg",
-            @"C:\e.jpg,C:\out\e.jpg,Images,2024,DateTaken,2024-01-01T00:00:00.0000000Z,,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,12,.jpg,,false,",
-            @"C:\f.jpg,C:\out\f.jpg,Images,2024,DateTaken,2024-01-01T00:00:00.0000000Z,,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,NaN,.jpg,H6,false,"
+            "ImportBatchId,SourcePath,OutputPath,Bucket,Sha256,SizeBytes,Extension,Width,Height,Orientation,CameraMake,CameraModel,ExifTags,ExifDateTimeOriginal,ExifCreateDate,ExifModifyDate,FolderDateCandidate,CreatedAtUtc,LastWriteAtUtc,CleanerBestDate,CleanerBestDateSource,GroupingYear,GroupingDate,IsDuplicate,CanonicalSourcePath,PerceptualHash",
+            @"batch1,C:\a.jpg,C:\out\a.jpg,Images,H1,12,.jpg,640,480,1,Canon,EOS,Travel;Family,2024-01-01T00:00:00.0000000Z,,,,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,2024-01-01T00:00:00.0000000Z,DateTimeOriginal,2024,2024-01-01T00:00:00.0000000Z,false,,",
+            @"batch1,C:\b.jpg,C:\out\b.jpg,Images,H1,12,.jpg,640,480,1,Canon,EOS,,,,,,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,2024-01-01T00:00:00.0000000Z,CreationTime,2024,2024-01-01T00:00:00.0000000Z,false,,",
+            @"batch1,C:\c.txt,C:\out\c.txt,Others,H2,12,.txt,,,,,,,,,,,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,2024-01-01T00:00:00.0000000Z,CreationTime,2024,2024-01-01T00:00:00.0000000Z,false,,",
+            @"batch1,C:\d.jpg,C:\out\d.jpg,Images,H3,12,.jpg,640,480,1,Canon,EOS,,,,,,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,2024-01-01T00:00:00.0000000Z,DateTimeOriginal,2024,2024-01-01T00:00:00.0000000Z,true,C:\x.jpg,",
+            @"batch1,C:\e.jpg,C:\out\e.jpg,Images,,12,.jpg,640,480,1,Canon,EOS,,,,,,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,2024-01-01T00:00:00.0000000Z,DateTimeOriginal,2024,2024-01-01T00:00:00.0000000Z,false,,",
+            @"batch1,C:\f.jpg,C:\out\f.jpg,Images,H6,NaN,.jpg,640,480,1,Canon,EOS,,,,,,2024-01-01T00:00:00.0000000Z,2024-01-01T00:00:01.0000000Z,2024-01-01T00:00:00.0000000Z,DateTimeOriginal,2024,2024-01-01T00:00:00.0000000Z,false,,"
         };
 
         File.WriteAllLines(path, lines);

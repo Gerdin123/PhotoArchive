@@ -4,7 +4,6 @@ namespace PhotoArchive.Cleaner.Services;
 
 internal sealed class FileAnalyzer(
     string sourceRoot,
-    bool useFolderDate,
     IFileClassifier classifier,
     IMetadataExtractor metadataExtractor,
     IDuplicateDetector duplicateDetector)
@@ -14,15 +13,22 @@ internal sealed class FileAnalyzer(
         var fileType = classifier.Classify(file);
         var fileInfo = new FileInfo(file);
         var createdUtc = fileInfo.CreationTimeUtc;
+        var createdLocal = fileInfo.CreationTime;
+        var lastWriteUtc = fileInfo.LastWriteTimeUtc;
+        var lastWriteLocal = fileInfo.LastWriteTime;
         var hash = duplicateDetector.ComputeHash(file);
 
-        var hasDateTaken = metadataExtractor.TryGetDateTaken(file, out var dateTaken);
-        var fallbackDate = hasDateTaken ? dateTaken : fileInfo.CreationTime;
-        var folderDate = default(DateTime);
-        var folderDateSource = string.Empty;
-        var hasFolderDate = useFolderDate && FolderDateResolver.TryGetDateFromFolder(sourceRoot, file, fallbackDate, out folderDate, out folderDateSource);
-        var groupingDate = hasFolderDate ? folderDate : fallbackDate;
-        var groupingDateSource = hasFolderDate ? folderDateSource : (hasDateTaken ? "DateTaken" : "FileCreationTime");
+        _ = metadataExtractor.TryExtract(file, out var metadata);
+        var folderDateCandidate = default(DateTime);
+        var hasFolderDate = FolderDateResolver.TryGetDateFromFolder(sourceRoot, file, createdLocal, out folderDateCandidate, out _);
+
+        var groupingDate = SelectBestDate(
+            metadata.ExifDateTimeOriginal,
+            metadata.ExifCreateDate,
+            hasFolderDate ? folderDateCandidate : null,
+            createdLocal,
+            lastWriteLocal,
+            out var groupingDateSource);
 
         return new AnalyzedFile
         {
@@ -30,12 +36,62 @@ internal sealed class FileAnalyzer(
             FileType = fileType,
             GroupingDate = groupingDate,
             GroupingDateSource = groupingDateSource,
-            DateTaken = hasDateTaken ? dateTaken : null,
+            ExifDateTimeOriginal = metadata.ExifDateTimeOriginal,
+            ExifCreateDate = metadata.ExifCreateDate,
+            ExifModifyDate = metadata.ExifModifyDate,
+            FolderDateCandidate = hasFolderDate ? folderDateCandidate : null,
             CreatedAtUtc = createdUtc,
-            LastWriteAtUtc = fileInfo.LastWriteTimeUtc,
+            LastWriteAtUtc = lastWriteUtc,
             SizeBytes = fileInfo.Length,
             Extension = fileInfo.Extension,
-            Sha256 = hash
+            Sha256 = hash,
+            Width = metadata.Width,
+            Height = metadata.Height,
+            Orientation = metadata.Orientation,
+            CameraMake = metadata.CameraMake,
+            CameraModel = metadata.CameraModel,
+            ExifTags = metadata.ExifTags
         };
+    }
+
+    private static DateTime SelectBestDate(
+        DateTime? exifDateTimeOriginal,
+        DateTime? exifCreateDate,
+        DateTime? folderDate,
+        DateTime creationTime,
+        DateTime lastWriteTime,
+        out string source)
+    {
+        if (exifDateTimeOriginal.HasValue)
+        {
+            source = "DateTimeOriginal";
+            return exifDateTimeOriginal.Value;
+        }
+
+        if (exifCreateDate.HasValue)
+        {
+            source = "CreateDate";
+            return exifCreateDate.Value;
+        }
+
+        if (folderDate.HasValue)
+        {
+            source = "FolderStructure";
+            return folderDate.Value;
+        }
+
+        if (IsUsableFileSystemDate(creationTime))
+        {
+            source = "CreationTime";
+            return creationTime;
+        }
+
+        source = "LastWriteTime";
+        return lastWriteTime;
+    }
+
+    private static bool IsUsableFileSystemDate(DateTime value)
+    {
+        return value.Year >= 1900;
     }
 }

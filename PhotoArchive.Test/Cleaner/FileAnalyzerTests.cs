@@ -18,17 +18,17 @@ public class FileAnalyzerTests
         {
             var analyzer = new FileAnalyzer(
                 sourceRoot: root,
-                useFolderDate: true,
                 classifier: new StubClassifier(FileType.Image),
-                metadataExtractor: new StubMetadataExtractor(false, default),
+                metadataExtractor: new StubMetadataExtractor(new ExtractedMetadata()),
                 duplicateDetector: new StubDuplicateDetector("HASH"));
 
             var result = analyzer.Analyze(file);
 
             Assert.Equal("HASH", result.Sha256);
-            Assert.Equal("FolderNamePrefix(yyyyMM)", result.GroupingDateSource);
+            Assert.Equal("FolderStructure", result.GroupingDateSource);
             Assert.Equal(2024, result.GroupingDate.Year);
             Assert.Equal(2, result.GroupingDate.Month);
+            Assert.NotNull(result.FolderDateCandidate);
         }
         finally
         {
@@ -38,28 +38,30 @@ public class FileAnalyzerTests
     }
 
     [Fact]
-    public void Analyze_UsesDateTaken_WhenFolderDateDisabled()
+    public void Analyze_UsesDateTimeOriginal_WhenExifDateExists()
     {
         var root = Path.Combine(Path.GetTempPath(), $"photoarchive-analyze-{Guid.NewGuid():N}");
         Directory.CreateDirectory(root);
         var file = Path.Combine(root, "a.jpg");
         File.WriteAllText(file, "abc");
-        var dateTaken = new DateTime(2023, 5, 6, 7, 8, 9);
+        var exifDate = new DateTime(2023, 5, 6, 7, 8, 9);
 
         try
         {
             var analyzer = new FileAnalyzer(
                 sourceRoot: root,
-                useFolderDate: false,
                 classifier: new StubClassifier(FileType.Image),
-                metadataExtractor: new StubMetadataExtractor(true, dateTaken),
+                metadataExtractor: new StubMetadataExtractor(new ExtractedMetadata
+                {
+                    ExifDateTimeOriginal = exifDate
+                }),
                 duplicateDetector: new StubDuplicateDetector("HASH"));
 
             var result = analyzer.Analyze(file);
 
-            Assert.Equal("DateTaken", result.GroupingDateSource);
-            Assert.Equal(dateTaken, result.GroupingDate);
-            Assert.Equal(dateTaken, result.DateTaken);
+            Assert.Equal("DateTimeOriginal", result.GroupingDateSource);
+            Assert.Equal(exifDate, result.GroupingDate);
+            Assert.Equal(exifDate, result.ExifDateTimeOriginal);
         }
         finally
         {
@@ -73,12 +75,12 @@ public class FileAnalyzerTests
         public FileType Classify(string filename) => output;
     }
 
-    private sealed class StubMetadataExtractor(bool hasDateTaken, DateTime date) : IMetadataExtractor
+    private sealed class StubMetadataExtractor(ExtractedMetadata metadata) : IMetadataExtractor
     {
-        public bool TryGetDateTaken(string filePath, out DateTime dateTaken)
+        public bool TryExtract(string filePath, out ExtractedMetadata extracted)
         {
-            dateTaken = date;
-            return hasDateTaken;
+            extracted = metadata;
+            return true;
         }
     }
 

@@ -24,11 +24,16 @@ public sealed class PhotoArchiveDbContext(DbContextOptions<PhotoArchiveDbContext
             entity.Property(x => x.FileName).HasMaxLength(512);
             entity.Property(x => x.Extension).HasMaxLength(32);
             entity.Property(x => x.Sha256).HasMaxLength(64);
+            entity.Property(x => x.ImportBatchId).HasMaxLength(64);
+            entity.Property(x => x.PerceptualHash).HasMaxLength(128);
+            entity.Property(x => x.CameraMake).HasMaxLength(256);
+            entity.Property(x => x.CameraModel).HasMaxLength(256);
             entity.Property(x => x.Bucket).HasConversion<string>().HasMaxLength(32);
             entity.Property(x => x.GroupingDateSource).HasConversion<string>().HasMaxLength(64);
 
             entity.HasIndex(x => x.Sha256);
             entity.HasIndex(x => x.GroupingDate);
+            entity.HasIndex(x => x.IsReviewed);
         });
 
         modelBuilder.Entity<Person>(entity =>

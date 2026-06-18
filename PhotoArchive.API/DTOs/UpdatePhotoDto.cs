@@ -4,6 +4,7 @@
     {
         public bool IsDuplicate { get; set; }
         public DateTime GroupingDate { get; set; }
+        public bool? IsReviewed { get; set; }
 
         public IEnumerable<int>? TagIds { get; set; } = [];
         public IEnumerable<int>? PersonIds { get; set; } = [];

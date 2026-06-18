@@ -7,6 +7,7 @@ namespace PhotoArchive.API.DTOs
         public string? Extension { get; set; }
 
         public bool? IsDuplicate { get; set; }
+        public bool? IsReviewed { get; set; }
         public int? GroupingYear { get; set; }
         public DateTime? GroupingDateFrom { get; set; }
         public DateTime? GroupingDateTo { get; set; }

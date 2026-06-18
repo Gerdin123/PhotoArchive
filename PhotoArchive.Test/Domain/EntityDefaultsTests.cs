@@ -39,9 +39,11 @@ public class EntityDefaultsTests
     {
         var values = Enum.GetNames<GroupingDateSource>();
 
-        Assert.Contains("DateTaken", values);
-        Assert.Contains("FolderNamePrefix", values);
+        Assert.Contains("DateTimeOriginal", values);
+        Assert.Contains("CreateDate", values);
+        Assert.Contains("FolderStructure", values);
         Assert.Contains("FileCreationTime", values);
+        Assert.Contains("LastWriteTime", values);
     }
 
     [Fact]

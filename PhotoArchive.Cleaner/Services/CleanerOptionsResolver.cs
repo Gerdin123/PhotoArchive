@@ -16,11 +16,6 @@ internal static class CleanerOptionsResolver
         }
 
         var outputRoot = CreateOutputFolder(sourcePath);
-        var useFolderDate = ResolveBooleanPreference(
-            args,
-            "--date-from-folder",
-            "Is Date based on folder structure? [Y/n]: ",
-            defaultValue: true);
         var groupThumbnails = ResolveBooleanPreference(
             args,
             "--others-thumbnails-folder",
@@ -35,7 +30,6 @@ internal static class CleanerOptionsResolver
         options = new CleanerOptions(
             SourcePath: sourcePath,
             OutputRoot: outputRoot,
-            UseFolderDate: useFolderDate,
             GroupThumbnails: groupThumbnails,
             GroupLegacyProgramFiles: groupLegacyProgramFiles);
         return true;

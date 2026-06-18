@@ -15,28 +15,38 @@ public class CsvExportServiceTests
         {
             var record = new ProcessedFileRecord
             {
+                ImportBatchId = "batch-1",
                 SourcePath = "C:\\input\\a,\"b\".jpg",
                 OutputPath = "C:\\output\\a.jpg",
                 Bucket = "Images",
-                GroupingYear = 2024,
-                GroupingDateSource = "DateTaken",
-                GroupingDate = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc),
-                DateTaken = null,
-                CreatedYear = 2024,
-                CreatedAtUtc = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc),
-                LastWriteAtUtc = new DateTime(2024, 1, 2, 3, 4, 6, DateTimeKind.Utc),
+                Sha256 = "ABC",
                 SizeBytes = 123,
                 Extension = ".jpg",
-                Sha256 = "ABC",
+                Width = 100,
+                Height = 200,
+                Orientation = 1,
+                CameraMake = "Canon",
+                CameraModel = "EOS",
+                ExifDateTimeOriginal = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc),
+                ExifCreateDate = null,
+                ExifModifyDate = null,
+                FolderDateCandidate = null,
+                CreatedAtUtc = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc),
+                LastWriteAtUtc = new DateTime(2024, 1, 2, 3, 4, 6, DateTimeKind.Utc),
+                CleanerBestDate = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc),
+                CleanerBestDateSource = "DateTimeOriginal",
+                GroupingYear = 2024,
+                GroupingDate = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc),
                 IsDuplicate = false,
-                CanonicalSourcePath = string.Empty
+                CanonicalSourcePath = string.Empty,
+                PerceptualHash = string.Empty
             };
 
             var csvPath = CsvExportService.Export(outputRoot, [record]);
             var lines = File.ReadAllLines(csvPath);
 
             Assert.Equal(2, lines.Length);
-            Assert.StartsWith("SourcePath,OutputPath,Bucket", lines[0], StringComparison.Ordinal);
+            Assert.StartsWith("ImportBatchId,SourcePath,OutputPath,Bucket,Sha256", lines[0], StringComparison.Ordinal);
             Assert.Contains("\"C:\\input\\a,\"\"b\"\".jpg\"", lines[1], StringComparison.Ordinal);
             Assert.Contains(",false,", lines[1], StringComparison.OrdinalIgnoreCase);
         }

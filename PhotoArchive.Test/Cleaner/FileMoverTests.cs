@@ -29,7 +29,7 @@ public class FileMoverTests
     }
 
     [Fact]
-    public void MoveToImages_CopiesFileToYearAndMonthFolder()
+    public void MoveToImages_CopiesFileToYearFolderWithDayIndexFileName()
     {
         var sourceRoot = Path.Combine(Path.GetTempPath(), $"photoarchive-source-{Guid.NewGuid():N}");
         var outputRoot = Path.Combine(Path.GetTempPath(), $"photoarchive-output-{Guid.NewGuid():N}");
@@ -41,10 +41,11 @@ public class FileMoverTests
         {
             var mover = new FileMover(sourceRoot, outputRoot);
 
-            var destination = mover.MoveToImages(sourceFile, 2024, 7);
+            var destination = mover.MoveToImages(sourceFile, 2024, new DateTime(2024, 7, 3), 2);
 
             Assert.True(File.Exists(destination));
-            Assert.Contains(Path.Combine("Images", "2024", "07"), destination, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains(Path.Combine("Images", "2024"), destination, StringComparison.OrdinalIgnoreCase);
+            Assert.EndsWith("20240703 - 02.jpg", destination, StringComparison.OrdinalIgnoreCase);
             Assert.Equal("hello", File.ReadAllText(destination));
         }
         finally

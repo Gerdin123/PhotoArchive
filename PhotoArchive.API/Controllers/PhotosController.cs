@@ -33,6 +33,9 @@ namespace PhotoArchive.API.Controllers
             if (request.IsDuplicate.HasValue)
                 query = query.Where(p => p.IsDuplicate == request.IsDuplicate.Value);
 
+            if (request.IsReviewed.HasValue)
+                query = query.Where(p => p.IsReviewed == request.IsReviewed.Value);
+
             if (request.GroupingYear.HasValue)
                 query = query.Where(p => p.GroupingYear == request.GroupingYear.Value);
 
@@ -58,7 +61,8 @@ namespace PhotoArchive.API.Controllers
                 .Select(p => new
                 {
                     p.Id,
-                    p.GroupingDate
+                    p.GroupingDate,
+                    p.IsReviewed
                 })
                 .ToListAsync();
 
@@ -66,6 +70,7 @@ namespace PhotoArchive.API.Controllers
             {
                 Id = p.Id,
                 GroupingDate = p.GroupingDate,
+                IsReviewed = p.IsReviewed,
                 ImageUrl = BuildImageUrl(p.Id)
             }).ToList();
 
@@ -91,6 +96,7 @@ namespace PhotoArchive.API.Controllers
                 {
                     p.Id,
                     p.GroupingDate,
+                    p.IsReviewed,
                     People = p.PhotoPeople
                         .Select(pp => new PersonDto
                         {
@@ -113,6 +119,7 @@ namespace PhotoArchive.API.Controllers
             {
                 Id = photo.Id,
                 GroupingDate = photo.GroupingDate,
+                IsReviewed = photo.IsReviewed,
                 ImageUrl = BuildImageUrl(photo.Id),
                 People = [.. photo.People],
                 Tags = [.. photo.Tags]
@@ -193,6 +200,10 @@ namespace PhotoArchive.API.Controllers
             }
 
             photo.GroupingDate = request.GroupingDate;
+            if (request.IsReviewed.HasValue)
+            {
+                photo.IsReviewed = request.IsReviewed.Value;
+            }
 
             _context.Photos.Update(photo);
             await _context.SaveChangesAsync();
@@ -282,7 +293,8 @@ namespace PhotoArchive.API.Controllers
 
         private string BuildImageUrl(int photoId)
         {
-            return Url.Action(nameof(GetImage), "Photos", new { id = photoId }, Request.Scheme)
+            var scheme = HttpContext?.Request?.Scheme;
+            return Url?.Action(nameof(GetImage), "Photos", new { id = photoId }, scheme)
                 ?? $"/api/photos/{photoId}/image";
         }
     }

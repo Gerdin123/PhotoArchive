@@ -18,13 +18,5 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\PhotoArchive.Cleaner\PhotoArchive.Cleaner.csproj" />
-    <ProjectReference Include="..\PhotoArchive.API\PhotoArchive.API.csproj" />
-    <ProjectReference Include="..\PhotoArchive.Domain\PhotoArchive.Domain.csproj" />
-    <ProjectReference Include="..\PhotoArchive.Import\PhotoArchive.Import.csproj" />
-    <ProjectReference Include="..\PhotoArchive.Infrastructure\PhotoArchive.Infrastructure.csproj" />
-  </ItemGroup>
-
 	
 </Project>

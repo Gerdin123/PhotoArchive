@@ -15,8 +15,10 @@ internal static class PhotoRowMapper
 
         var sourcePath = ManifestCsv.GetField(fields, indexes.SourcePath);
         var outputPath = ManifestCsv.GetField(fields, indexes.OutputPath);
+        var importBatchId = ManifestCsv.GetField(fields, indexes.ImportBatchId);
         var extension = ManifestCsv.GetField(fields, indexes.Extension);
         var sha256 = ManifestCsv.GetField(fields, indexes.Sha256);
+        var perceptualHash = ManifestCsv.GetField(fields, indexes.PerceptualHash);
 
         if (!ManifestCsv.TryParseLong(ManifestCsv.GetField(fields, indexes.SizeBytes), out var sizeBytes))
         {
@@ -45,10 +47,16 @@ internal static class PhotoRowMapper
         var groupingYearText = ManifestCsv.GetField(fields, indexes.GroupingYear);
         var groupingYear = ManifestCsv.TryParseInt(groupingYearText, out var parsedYear) ? parsedYear : groupingDate.Year;
 
-        var groupingDateSource = ParseGroupingDateSource(ManifestCsv.GetField(fields, indexes.GroupingDateSource));
-        var dateTaken = ManifestCsv.TryParseNullableDateTime(ManifestCsv.GetField(fields, indexes.DateTaken), out var parsedDateTaken)
-            ? parsedDateTaken
-            : null;
+        var groupingDateSource = ParseGroupingDateSource(ManifestCsv.GetField(fields, indexes.CleanerBestDateSource));
+        var exifDateTimeOriginal = ParseNullableDateTime(fields, indexes.ExifDateTimeOriginal);
+        var exifCreateDate = ParseNullableDateTime(fields, indexes.ExifCreateDate);
+        var exifModifyDate = ParseNullableDateTime(fields, indexes.ExifModifyDate);
+        var folderDateCandidate = ParseNullableDateTime(fields, indexes.FolderDateCandidate);
+        var widthFromCsv = ParseNullableInt(fields, indexes.Width);
+        var heightFromCsv = ParseNullableInt(fields, indexes.Height);
+        var orientation = ParseNullableInt(fields, indexes.Orientation);
+        var cameraMake = ManifestCsv.GetField(fields, indexes.CameraMake);
+        var cameraModel = ManifestCsv.GetField(fields, indexes.CameraModel);
 
         var canonicalSourcePath = ManifestCsv.GetField(fields, indexes.CanonicalSourcePath);
         var fileName = Path.GetFileName(outputPath);
@@ -57,7 +65,14 @@ internal static class PhotoRowMapper
             fileName = Path.GetFileName(sourcePath);
         }
 
-        var (width, height) = ImageDimensionReader.ResolveImageDimensions(outputPath, sourcePath);
+        var width = widthFromCsv;
+        var height = heightFromCsv;
+        if (!width.HasValue || !height.HasValue)
+        {
+            var resolved = ImageDimensionReader.ResolveImageDimensions(outputPath, sourcePath);
+            width ??= resolved.Width;
+            height ??= resolved.Height;
+        }
 
         photo = new Photo
         {
@@ -67,15 +82,24 @@ internal static class PhotoRowMapper
             Extension = string.IsNullOrWhiteSpace(extension) ? Path.GetExtension(outputPath) : extension,
             SizeBytes = sizeBytes,
             Sha256 = sha256,
+            ImportBatchId = string.IsNullOrWhiteSpace(importBatchId) ? null : importBatchId,
+            PerceptualHash = string.IsNullOrWhiteSpace(perceptualHash) ? null : perceptualHash,
             Bucket = PhotoBucket.Images,
             IsDuplicate = false,
+            IsReviewed = false,
             CanonicalSourcePath = string.IsNullOrWhiteSpace(canonicalSourcePath) ? null : canonicalSourcePath,
             GroupingYear = groupingYear,
             GroupingDateSource = groupingDateSource,
             GroupingDate = groupingDate,
-            DateTaken = dateTaken,
+            ExifDateTimeOriginal = exifDateTimeOriginal,
+            ExifCreateDate = exifCreateDate,
+            ExifModifyDate = exifModifyDate,
+            FolderDateCandidate = folderDateCandidate,
             CreatedAtUtc = createdAtUtc,
             LastWriteAtUtc = lastWriteAtUtc,
+            CameraMake = string.IsNullOrWhiteSpace(cameraMake) ? null : cameraMake,
+            CameraModel = string.IsNullOrWhiteSpace(cameraModel) ? null : cameraModel,
+            Orientation = orientation,
             Width = width,
             Height = height
         };
@@ -85,16 +109,41 @@ internal static class PhotoRowMapper
 
     private static GroupingDateSource ParseGroupingDateSource(string input)
     {
-        if (input.StartsWith("DateTaken", StringComparison.OrdinalIgnoreCase))
+        if (input.StartsWith("DateTimeOriginal", StringComparison.OrdinalIgnoreCase)
+            || input.StartsWith("DateTaken", StringComparison.OrdinalIgnoreCase))
         {
-            return GroupingDateSource.DateTaken;
+            return GroupingDateSource.DateTimeOriginal;
         }
 
-        if (input.StartsWith("FolderNamePrefix", StringComparison.OrdinalIgnoreCase))
+        if (input.StartsWith("CreateDate", StringComparison.OrdinalIgnoreCase))
         {
-            return GroupingDateSource.FolderNamePrefix;
+            return GroupingDateSource.CreateDate;
+        }
+
+        if (input.StartsWith("FolderStructure", StringComparison.OrdinalIgnoreCase)
+            || input.StartsWith("FolderNamePrefix", StringComparison.OrdinalIgnoreCase))
+        {
+            return GroupingDateSource.FolderStructure;
+        }
+
+        if (input.StartsWith("LastWriteTime", StringComparison.OrdinalIgnoreCase))
+        {
+            return GroupingDateSource.LastWriteTime;
         }
 
         return GroupingDateSource.FileCreationTime;
+    }
+
+    private static int? ParseNullableInt(IReadOnlyList<string> fields, int index)
+    {
+        var input = ManifestCsv.GetField(fields, index);
+        return ManifestCsv.TryParseInt(input, out var value) ? value : null;
+    }
+
+    private static DateTime? ParseNullableDateTime(IReadOnlyList<string> fields, int index)
+    {
+        return ManifestCsv.TryParseNullableDateTime(ManifestCsv.GetField(fields, index), out var value)
+            ? value
+            : null;
     }
 }
