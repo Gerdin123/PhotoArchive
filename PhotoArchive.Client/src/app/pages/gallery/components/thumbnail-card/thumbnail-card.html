@@ -1,9 +1,0 @@
-<article class="thumbnail-card" role="group" [attr.aria-label]="image.title" (click)="toDetails()">
-  <div class="thumbnail-media">
-    <img [src]="image.url" [alt]="image.title" loading="eager" />
-  </div>
-  <div class="thumbnail-content">
-    <p class="thumbnail-title">{{ image.title }}</p>
-    <p class="thumbnail-date">{{ image.date | date: 'mediumDate' }}</p>
-  </div>
-</article>
