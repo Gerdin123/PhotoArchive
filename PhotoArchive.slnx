@@ -1,1 +1,12 @@
-<Solution />
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PhotoArchive.App/PhotoArchive.App.csproj" />
+    <Project Path="src/PhotoArchive.Cli/PhotoArchive.Cli.csproj" />
+    <Project Path="src/PhotoArchive.Core/PhotoArchive.Core.csproj" />
+    <Project Path="src/PhotoArchive.Infrastructure/PhotoArchive.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PhotoArchive.Core.Tests/PhotoArchive.Core.Tests.csproj" />
+    <Project Path="tests/PhotoArchive.IntegrationTests/PhotoArchive.IntegrationTests.csproj" />
+  </Folder>
+</Solution>

@@ -21,7 +21,7 @@ The app must prioritize data safety, traceability, and repeatability over speed 
 - Backend/runtime: C# on .NET 10 LTS.
 - UI: Avalonia UI for a cross-platform desktop app.
 - Database: SQLite for local metadata, indexes, tags, corrections, and processing state.
-- Data access: EF Core or Dapper. Prefer Dapper for simple explicit queries; EF Core is acceptable if migrations and relationships become complex.
+- Data access: EF Core with SQLite. Use migrations for schema changes and keep entity mappings explicit and reviewable.
 - Metadata: ExifTool as an external process for robust EXIF/IPTC/XMP read/write support. Wrap it behind an `IMetadataReader` / `IMetadataWriter` abstraction.
 - Image decoding/thumbnails: ImageSharp, Magick.NET, or SkiaSharp. Keep this behind an abstraction.
 - Background jobs: .NET `BackgroundService`, channels, or TPL Dataflow for scanning/hash/thumbnail pipelines.
@@ -143,16 +143,16 @@ Root output structure:
 ```text
 Output/
   Photos/
-    2000-2010/
+    2000-2009/
       2007/
         20070414 - 1.jpg
         20070414 - 2.jpg
   Duplicates/
-    2000-2010/
+    2000-2009/
       2007/
         <original filename>
   Unsupported/
-    2000-2010/
+    2000-2009/
       2007/
         <original filename>
     UnknownDate/
@@ -162,7 +162,7 @@ Output/
     operations-YYYYMMDD-HHMMSS.log
 ```
 
-Decade folders should be configurable. Default to inclusive decade buckets such as `2000-2010`, `2011-2020`, `2021-2030`, or use strict calendar decades `2000-2009`, `2010-2019` if the user chooses that setting. Pick one convention and keep it consistent.
+Decade folders must use strict calendar decades only. Examples: `1990-1999`, `2000-2009`, `2010-2019`, `2020-2029`. Do not use inclusive 11-year buckets such as `2000-2010`, `2011-2020`, or `2021-2030`.
 
 Supported images are renamed as:
 
@@ -179,7 +179,10 @@ Duplicates should not be renamed by default. Store them under `Duplicates` and k
 ## Manual review UI requirements
 The review UI should support:
 
+- A directory setup view for choosing the original unprocessed folder, cleaned output folder, and local SQLite database. If the selected archive database is empty, the app should run deterministic preprocessing before opening review.
+- A directory home view with a paged subset of images for the selected archive.
 - Browse photos by date, decade, year, tag, duplicate group, and review status.
+- Sort and filter from the home view by date, tags, review status, duplicate state, unprocessed state, and uncertain dates.
 - Show metadata and date confidence clearly.
 - Show nearby photos by date/time.
 - Show visually similar/related photos using one or more heuristics:
@@ -203,7 +206,7 @@ When writing metadata:
 - Prefer writing standard EXIF/XMP fields.
 - Preserve original metadata where possible.
 - Keep an operation log of every metadata write.
-- Consider writing XMP sidecars for formats where embedded metadata writes are risky or unsupported.
+- Prefer XMP sidecars by default in v1 so originals are not modified. Embedded writes must be an explicit future option with backup/copy safety.
 - Always test metadata writes on copied files, never originals.
 
 ## Duplicate detection
@@ -297,8 +300,10 @@ When implementing code in this repository:
 4. Add tests for every rule that changes filenames, dates, duplicate handling, or file movement.
 5. Prefer small services with explicit interfaces:
    - `IFileScanner`
+   - `IFileClassifier`
    - `IHashService`
    - `IMetadataReader`
+   - `IMetadataWriter`
    - `IDateInferenceService`
    - `IOutputPlanner`
    - `IArchiveExecutor`
