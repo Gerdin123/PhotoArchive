@@ -12,8 +12,11 @@ public sealed class PhotoMetadata
     public DateConfidence DateConfidence { get; set; } = DateConfidence.Unknown;
     public string? CameraMake { get; set; }
     public string? CameraModel { get; set; }
+    public string? Title { get; set; }
     public int? Width { get; set; }
     public int? Height { get; set; }
+    public string? AverageColorHex { get; set; }
+    public string? PerceptualHash { get; set; }
     public decimal? GpsLatitude { get; set; }
     public decimal? GpsLongitude { get; set; }
 }

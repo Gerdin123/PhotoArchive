@@ -61,8 +61,19 @@ public sealed class MetadataWriteBackService
 
             try
             {
+                var tags = await (from photoTag in dbContext.PhotoTags
+                                  join tag in dbContext.Tags on photoTag.TagId equals tag.Id
+                                  where photoTag.ArchiveFileId == row.file.Id
+                                  orderby tag.Type, tag.Name
+                                  select tag.Name)
+                    .ToListAsync(cancellationToken);
                 await metadataWriter.WriteAsync(
-                    new MetadataWriteRequest(targetPath, row.metadata.InferredTakenDate, PreferSidecar: true),
+                    new MetadataWriteRequest(
+                        targetPath,
+                        row.metadata.InferredTakenDate,
+                        PreferSidecar: true,
+                        Title: row.metadata.Title,
+                        Tags: tags),
                     cancellationToken);
 
                 written++;
@@ -74,7 +85,7 @@ public sealed class MetadataWriteBackService
                     Result = "Written"
                 });
             }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or NotSupportedException)
             {
                 failed++;
                 dbContext.OperationLogs.Add(new OperationLog

@@ -104,4 +104,111 @@ public sealed class PreprocessingMilestoneTests
             }
         }
     }
+
+    [Fact]
+    public async Task Preprocessing_manifest_matches_representative_golden_json()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"photoarchive-manifest-golden-{Guid.NewGuid():N}");
+        var input = Path.Combine(root, "input");
+        var output = Path.Combine(root, "output");
+
+        try
+        {
+            var takenDate = new DateTimeOffset(2007, 4, 14, 9, 30, 0, TimeSpan.Zero);
+            var plan = new OutputPlan(
+                new PreprocessingSettings(input, output, Execute: false),
+                new DateTimeOffset(2026, 6, 18, 12, 0, 0, TimeSpan.Zero),
+                [
+                    new PlannedFileOperation(
+                        SourcePath: Path.Combine(input, "photo.jpg"),
+                        DestinationPath: Path.Combine(output, "Photos", "2000-2009", "2007", "20070414 - 1.jpg"),
+                        MediaKind: MediaKind.SupportedImage,
+                        Sha256Hash: "hash-canonical",
+                        InferredTakenDate: takenDate,
+                        DateConfidence: DateConfidence.High,
+                        DateSource: "EXIF:DateTimeOriginal",
+                        IsDuplicate: false,
+                        CanonicalSourcePath: null,
+                        DuplicateGroupId: null),
+                    new PlannedFileOperation(
+                        SourcePath: Path.Combine(input, "copy.jpg"),
+                        DestinationPath: Path.Combine(output, "Duplicates", "2000-2009", "2007", "copy.jpg"),
+                        MediaKind: MediaKind.Duplicate,
+                        Sha256Hash: "hash-canonical",
+                        InferredTakenDate: takenDate,
+                        DateConfidence: DateConfidence.High,
+                        DateSource: "EXIF:DateTimeOriginal",
+                        IsDuplicate: true,
+                        CanonicalSourcePath: Path.Combine(input, "photo.jpg"),
+                        DuplicateGroupId: "hash-canonical")
+                ]);
+
+            var manifestPath = await new PreprocessingManifestWriter().WriteAsync(plan);
+            var actual = NormalizeGoldenJson(await File.ReadAllTextAsync(manifestPath), root);
+
+            const string expected = """
+{
+  "AppVersion": "0.1.0",
+  "RunTimestampUtc": "2026-06-18T12:00:00+00:00",
+  "InputRoot": "<root>/input",
+  "OutputRoot": "<root>/output",
+  "Settings": {
+    "Execute": false,
+    "AllowOutputInsideInput": false
+  },
+  "Files": [
+    {
+      "SourcePath": "<root>/input/photo.jpg",
+      "PlannedDestination": "<root>/output/Photos/2000-2009/2007/20070414 - 1.jpg",
+      "Sha256Hash": "hash-canonical",
+      "MediaKind": "SupportedImage",
+      "InferredDate": "2007-04-14T09:30:00+00:00",
+      "DateConfidence": "High",
+      "DateSource": "EXIF:DateTimeOriginal",
+      "IsDuplicate": false,
+      "DuplicateGroupId": null,
+      "CanonicalSourcePath": null,
+      "ExecutionResult": "Planned",
+      "Error": null
+    },
+    {
+      "SourcePath": "<root>/input/copy.jpg",
+      "PlannedDestination": "<root>/output/Duplicates/2000-2009/2007/copy.jpg",
+      "Sha256Hash": "hash-canonical",
+      "MediaKind": "Duplicate",
+      "InferredDate": "2007-04-14T09:30:00+00:00",
+      "DateConfidence": "High",
+      "DateSource": "EXIF:DateTimeOriginal",
+      "IsDuplicate": true,
+      "DuplicateGroupId": "hash-canonical",
+      "CanonicalSourcePath": "<root>/input/photo.jpg",
+      "ExecutionResult": "Planned",
+      "Error": null
+    }
+  ]
+}
+""";
+
+            Assert.Equal(NormalizeLineEndings(expected), actual);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    private static string NormalizeGoldenJson(string json, string root)
+    {
+        return NormalizeLineEndings(json)
+            .Replace(root.Replace("\\", "\\\\"), "<root>", StringComparison.OrdinalIgnoreCase)
+            .Replace("\\\\", "/", StringComparison.Ordinal);
+    }
+
+    private static string NormalizeLineEndings(string value)
+    {
+        return value.Replace("\r\n", "\n", StringComparison.Ordinal);
+    }
 }

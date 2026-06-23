@@ -28,6 +28,7 @@ public sealed class PhotoArchiveDbContext : DbContext
             entity.Property(file => file.Extension).IsRequired();
             entity.Property(file => file.MediaKind).HasConversion<string>().IsRequired();
             entity.Property(file => file.Status).HasConversion<string>().IsRequired();
+            entity.Property(file => file.ThumbnailStatus).HasConversion<string>().IsRequired();
             entity.HasIndex(file => file.Sha256Hash);
             entity.HasIndex(file => file.OriginalPath).IsUnique();
         });

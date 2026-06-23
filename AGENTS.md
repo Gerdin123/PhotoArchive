@@ -233,6 +233,8 @@ Before moving/copying files:
 - Never overwrite existing files unless the manifest says it is safe and user approved it.
 
 ## Testing requirements
+Always run the affected tests after making changes. If affected tests fail, fix the issues before handing off. If a change exposes missing coverage, add tests for the expected behavior plus negative and edge cases before considering the task complete.
+
 Add tests for:
 
 - SHA-256 duplicate grouping.

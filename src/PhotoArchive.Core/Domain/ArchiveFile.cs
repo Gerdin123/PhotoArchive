@@ -11,6 +11,8 @@ public sealed class ArchiveFile
     public string? Sha256Hash { get; set; }
     public MediaKind MediaKind { get; set; } = MediaKind.Unknown;
     public ArchiveFileStatus Status { get; set; } = ArchiveFileStatus.Scanned;
+    public string? ThumbnailPath { get; set; }
+    public ThumbnailStatus ThumbnailStatus { get; set; } = ThumbnailStatus.NotCreated;
     public DateTimeOffset CreatedAtUtc { get; init; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAtUtc { get; set; } = DateTimeOffset.UtcNow;
 }

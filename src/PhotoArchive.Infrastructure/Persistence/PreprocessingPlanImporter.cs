@@ -34,6 +34,9 @@ public sealed class PreprocessingPlanImporter
             archiveFile.Sha256Hash = operation.Sha256Hash;
             archiveFile.MediaKind = operation.MediaKind;
             archiveFile.Status = ToStatus(operation);
+            archiveFile.ThumbnailStatus = operation.MediaKind == MediaKind.SupportedImage && archiveFile.Status != ArchiveFileStatus.Duplicate
+                ? ThumbnailStatus.NotCreated
+                : ThumbnailStatus.Skipped;
             archiveFile.UpdatedAtUtc = plan.RunStartedAtUtc;
 
             if (!existingFiles.ContainsKey(operation.SourcePath))

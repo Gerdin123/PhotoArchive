@@ -55,6 +55,13 @@ namespace PhotoArchive.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("ThumbnailPath")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("ThumbnailStatus")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTimeOffset>("UpdatedAtUtc")
                         .HasColumnType("TEXT");
 
@@ -164,6 +171,9 @@ namespace PhotoArchive.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("AverageColorHex")
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CameraMake")
                         .HasColumnType("TEXT");
 
@@ -196,6 +206,12 @@ namespace PhotoArchive.Infrastructure.Persistence.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<DateTimeOffset?>("InferredTakenDate")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("PerceptualHash")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Title")
                         .HasColumnType("TEXT");
 
                     b.Property<int?>("Width")

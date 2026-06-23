@@ -36,6 +36,8 @@ public sealed class InfrastructureSafetyTests
     [InlineData("photo.jpg", new byte[] { 0xff, 0xd8, 0xff, 0x00 }, MediaKind.SupportedImage, "signature")]
     [InlineData("photo.png", new byte[] { 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a }, MediaKind.SupportedImage, "signature")]
     [InlineData("photo.gif", new byte[] { 0x47, 0x49, 0x46, 0x38, 0x39, 0x61 }, MediaKind.SupportedImage, "signature")]
+    [InlineData("photo.tif", new byte[] { 0x49, 0x49, 0x2a, 0x00 }, MediaKind.SupportedImage, "signature")]
+    [InlineData("photo.tiff", new byte[] { 0x4d, 0x4d, 0x00, 0x2a }, MediaKind.SupportedImage, "signature")]
     [InlineData("photo.webp", new byte[] { 0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50 }, MediaKind.SupportedImage, "signature")]
     [InlineData("notes.txt", new byte[] { 0x01, 0x02 }, MediaKind.Unsupported, "Unsupported extension")]
     public async Task SimpleFileClassifier_classifies_supported_signatures_and_unsupported_extensions(

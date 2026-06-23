@@ -15,7 +15,16 @@ public sealed class ArchiveExecutor : IArchiveExecutor
         OutputPlan plan,
         CancellationToken cancellationToken = default)
     {
+        return await ExecuteAsync(plan, progress: null, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<PlannedFileOperation>> ExecuteAsync(
+        OutputPlan plan,
+        Action<ArchiveExecutionProgress>? progress,
+        CancellationToken cancellationToken = default)
+    {
         var results = new List<PlannedFileOperation>(plan.Operations.Count);
+        var completed = 0;
 
         foreach (var operation in plan.Operations)
         {
@@ -30,6 +39,8 @@ public sealed class ArchiveExecutor : IArchiveExecutor
                         ExecutionResult = "Failed",
                         ErrorMessage = "Destination already exists."
                     });
+                    completed++;
+                    progress?.Invoke(new ArchiveExecutionProgress(completed, plan.Operations.Count));
                     continue;
                 }
 
@@ -48,6 +59,8 @@ public sealed class ArchiveExecutor : IArchiveExecutor
                         ExecutionResult = "Failed",
                         ErrorMessage = "Copied file hash did not match source hash."
                     });
+                    completed++;
+                    progress?.Invoke(new ArchiveExecutionProgress(completed, plan.Operations.Count));
                     continue;
                 }
 
@@ -61,8 +74,15 @@ public sealed class ArchiveExecutor : IArchiveExecutor
                     ErrorMessage = ex.Message
                 });
             }
+
+            completed++;
+            progress?.Invoke(new ArchiveExecutionProgress(completed, plan.Operations.Count));
         }
 
         return results;
     }
 }
+
+public sealed record ArchiveExecutionProgress(
+    int CompletedOperations,
+    int TotalOperations);

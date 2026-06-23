@@ -10,10 +10,13 @@ public sealed record ReviewPhoto(
     MediaKind MediaKind,
     ArchiveFileStatus Status,
     string? Sha256Hash,
+    string? ThumbnailPath,
     DateTimeOffset? InferredTakenDate,
     DateConfidence DateConfidence,
+    string? Title,
     string Tags)
 {
     public string DisplayDate => InferredTakenDate?.ToString("yyyy-MM-dd HH:mm") ?? "Unknown";
-    public string DisplayTitle => $"{DisplayDate}  {OriginalFileName}";
+    public string DisplayName => string.IsNullOrWhiteSpace(Title) ? OriginalFileName : Title.Trim();
+    public string DisplayTitle => $"{DisplayDate}  {DisplayName}";
 }

@@ -64,8 +64,15 @@ Console.WriteLine($"Output: {settings.OutputRoot}");
 Console.WriteLine(settings.Execute ? "Mode:   execute" : "Mode:   dry-run");
 
 var analyzedFiles = new List<AnalyzedFile>();
+var skippedFiles = 0;
 await foreach (var scannedFile in scanner.ScanAsync(settings.InputRoot))
 {
+    if (PreprocessingFileFilter.ShouldSkip(scannedFile))
+    {
+        skippedFiles++;
+        continue;
+    }
+
     var classification = await classifier.ClassifyAsync(scannedFile);
     var hash = await hashService.ComputeSha256Async(scannedFile.FullPath);
     var dateEvidence = await metadataReader.ReadDateEvidenceAsync(scannedFile);
@@ -117,6 +124,7 @@ if (!string.IsNullOrWhiteSpace(options.DatabasePath))
 }
 
 Console.WriteLine($"Files scanned: {analyzedFiles.Count}");
+Console.WriteLine($"Files skipped: {skippedFiles}");
 Console.WriteLine($"Manifest:      {manifestPath}");
 Console.WriteLine($"Operation log: {operationLogPath}");
 
